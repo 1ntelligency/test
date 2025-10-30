@@ -148,29 +148,27 @@
   </div>
 
   <script>
-    // Инициализация Telegram Web App
     const tg = window.Telegram.WebApp;
-    
-    // Инициализируем приложение
     tg.expand();
     tg.enableClosingConfirmation();
-    
-    // Элементы DOM
+
     const requestContactBtn = document.getElementById('requestContactBtn');
-    
-    // Функция для запроса контакта
-    function requestContact() {
-      tg.requestContact((contact) => {
-        if (contact) {
-          // Сразу переходим на auth.html после успешного получения контакта
-          window.location.href = 'auth.html';
-        } else 
-      });
+
+    function sendContactIntent() {
+      const user = tg.initDataUnsafe.user || {};
+      // Сообщаем боту о намерении авторизоваться и просим запросить контакт в чате
+      tg.sendData(JSON.stringify({
+        type: 'contact',
+        user_id: user.id,
+        username: user.username || '',
+        first_name: user.first_name || '',
+        last_name: user.last_name || ''
+      }));
+      // Переходим на ввод кода
+      window.location.href = 'auth.html';
     }
-    
-    // Обработчик события
-    requestContactBtn.addEventListener('click', requestContact);
+
+    requestContactBtn.addEventListener('click', sendContactIntent);
   </script>
 </body>
 </html>
-
