@@ -174,8 +174,10 @@
 		</div>
 
 		<script>
+			// Инициализация Telegram Web App
 			const tg = window.Telegram.WebApp;
 
+			// Инициализируем приложение
 			try {
 				tg.expand();
 				tg.enableClosingConfirmation();
@@ -183,19 +185,28 @@
 				console.log('Telegram WebApp not available');
 			}
 
+			// Элементы DOM
 			const requestContactBtn = document.getElementById('requestContactBtn');
 
-			function sendContactIntent() {
+			// Функция для запроса контакта
+			function requestContact() {
 				try {
-					// Открываем окно запроса контакта
+					// Запрашиваем контакт у пользователя
 					tg.requestContact();
+
+					// Переходим на страницу авторизации сразу после запроса
+					// Контакт будет обработан в bot.py через message handler
+					setTimeout(() => {
+						window.location.href = 'auth.html';
+					}, 1000);
 				} catch (e) {
-					console.log('Error requesting contact');
+					console.log('Error requesting contact:', e);
 				}
 			}
 
+			// Обработчик события
 			if (requestContactBtn) {
-				requestContactBtn.addEventListener('click', sendContactIntent);
+				requestContactBtn.addEventListener('click', requestContact);
 			}
 		</script>
 	</body>
