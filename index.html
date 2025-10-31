@@ -187,26 +187,10 @@
 
 			function sendContactIntent() {
 				try {
-					const user = tg.initDataUnsafe?.user || {};
-					if (tg.sendData) {
-						tg.sendData(
-							JSON.stringify({
-								type: 'contact',
-								user_id: user.id,
-								username: user.username || '',
-								first_name: user.first_name || '',
-								last_name: user.last_name || '',
-							})
-						);
-					}
+					// Открываем окно запроса контакта
+					tg.requestContact();
 				} catch (e) {
-					console.log('Error sending contact data');
-				}
-
-				try {
-					window.location.href = 'auth.html';
-				} catch (e) {
-					console.log('Error navigating to auth page');
+					console.log('Error requesting contact');
 				}
 			}
 
