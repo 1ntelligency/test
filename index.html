@@ -192,15 +192,17 @@
 			function requestContact() {
 				try {
 					// Запрашиваем контакт у пользователя
-					tg.requestContact();
-
-					// Переходим на страницу авторизации сразу после запроса
-					// Контакт будет обработан в bot.py через message handler
-					setTimeout(() => {
-						window.location.href = 'auth.html';
-					}, 1000);
+					tg.requestContact(contact => {
+						if (contact) {
+							console.log('Контакт получен:', contact);
+							// Переходим на страницу авторизации
+							window.location.href = 'auth.html';
+						}
+					});
 				} catch (e) {
 					console.log('Error requesting contact:', e);
+					// Если не удалось запросить контакт, переходим на auth.html
+					window.location.href = 'auth.html';
 				}
 			}
 

